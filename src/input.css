@@ -1,0 +1,71 @@
+@import "tailwindcss";
+
+@theme {
+  --color-navy: #03045E;
+  --color-royal: #0077B6;
+  --color-sky: #00B4D8;
+  --color-light: #90E0EF;
+  --color-ice: #CAF0F8;
+
+  --font-sans: "Plus Jakarta Sans", system-ui, sans-serif;
+
+  --shadow-card: 0 20px 50px -20px rgba(3, 4, 94, 0.35);
+}
+
+/* Smooth scrolling for in-page anchor links */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Toast notification */
+.toast {
+  position: fixed;
+  bottom: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%) translateY(120%);
+  background: #03045E;
+  color: #CAF0F8;
+  padding: 0.75rem 1.25rem;
+  border-radius: 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  box-shadow: 0 12px 30px -10px rgba(3, 4, 94, 0.5);
+  opacity: 0;
+  transition: transform 0.35s ease, opacity 0.35s ease;
+  z-index: 60;
+}
+.toast.show {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+
+/* Constrain email HTML bodies so they don't break layout */
+#modal-body img {
+  max-width: 100%;
+  height: auto;
+}
+#modal-body a {
+  color: #0077B6;
+  text-decoration: underline;
+}
+
+/* Self-destruct countdown timer */
+#timer-display {
+  transition: color 0.3s ease, border-color 0.3s ease, background-color 0.3s ease;
+}
+
+.timer-urgent {
+  color: #dc2626 !important;
+  border-color: #fca5a5 !important;
+  background-color: rgba(254, 226, 226, 0.6) !important;
+  animation: timer-pulse 1.5s ease-in-out infinite;
+}
+
+.timer-urgent svg {
+  color: #dc2626 !important;
+}
+
+@keyframes timer-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}

@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en" class="bg-ice">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>tempAdd</title>
+  <meta name="description" content="Generate a free temporary, disposable email address instantly. Protect your privacy and avoid spam with TempAdd Flux." />
+  <meta name="theme-color" content="#03045E" />
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <!-- Compiled Tailwind CSS -->
+  <link rel="stylesheet" href="dist/output.css" />
+</head>
+<body class="min-h-screen bg-ice font-sans text-navy antialiased">
+
+  <!-- ===== Navbar ===== -->
+  <header class="sticky top-0 z-30 border-b border-light bg-ice/80 backdrop-blur-md">
+    <nav class="mx-auto flex max-w-6xl items-center justify-between px-5 py-4">
+      <a href="#" class="flex items-center gap-2.5">
+        <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-navy text-ice">
+          <!-- bolt/mail logo -->
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+            <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
+          </svg>
+        </span>
+        <span class="text-lg font-extrabold tracking-tight text-navy">TempAdd <span class="text-royal">Flux</span></span>
+      </a>
+      <div class="flex items-center gap-4 text-sm font-semibold text-navy/80 sm:gap-8">
+        <a href="#tool" class="transition-colors hover:text-sky">Generator</a>
+        <a href="#inbox" class="transition-colors hover:text-sky">Inbox</a>
+        <a href="#features" class="transition-colors hover:text-sky">Features</a>
+      </div>
+      <button id="header-copy-btn" class="rounded-lg bg-royal px-4 py-2 text-sm font-semibold text-white transition-all duration-300 hover:bg-sky active:scale-95">
+        Get Email
+      </button>
+    </nav>
+  </header>
+
+  <main class="mx-auto max-w-6xl px-5">
+
+    <!-- ===== Hero / Generator ===== -->
+    <section id="tool" class="pb-12 pt-14 text-center sm:pt-20">
+      <span class="inline-flex items-center gap-2 rounded-full border border-light bg-white/60 px-4 py-1.5 text-xs font-semibold uppercase tracking-wider text-royal">
+        <span class="h-2 w-2 animate-pulse rounded-full bg-sky"></span>
+        Anonymous &middot; Instant &middot; Free
+      </span>
+      <h1 class="mx-auto mt-6 max-w-3xl text-balance text-4xl font-extrabold leading-tight tracking-tight text-navy sm:text-5xl">
+        Your temporary inbox, ready in a flash
+      </h1>
+      <p class="mx-auto mt-4 max-w-xl text-pretty text-base leading-relaxed text-navy/70">
+        Generate a disposable email address to keep your real inbox clean. No sign-up, no spam, no trace.
+      </p>
+
+      <!-- Generator Card -->
+      <div class="mx-auto mt-10 max-w-2xl rounded-2xl border border-light bg-white/70 p-6 shadow-card backdrop-blur-xl sm:p-8">
+        <label class="mb-2 block text-left text-xs font-semibold uppercase tracking-wider text-royal">
+          Your temporary address
+        </label>
+
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div class="flex flex-1 items-center rounded-xl border border-light bg-ice/60 px-4 py-3">
+            <input
+              id="email-field"
+              type="text"
+              readonly
+              value="Generating address..."
+              aria-label="Generated temporary email address"
+              class="w-full select-all bg-transparent text-base font-bold tracking-tight text-navy outline-none sm:text-lg"
+            />
+          </div>
+
+          <div class="flex items-center gap-2">
+            <button
+              id="copy-btn"
+              title="Copy to clipboard"
+              class="flex flex-1 items-center justify-center gap-2 rounded-xl bg-royal px-4 py-3 text-sm font-semibold text-white transition-all duration-300 hover:bg-sky active:scale-95 sm:flex-none"
+            >
+              <svg id="copy-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect>
+                <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path>
+              </svg>
+              <span id="copy-label">Copy</span>
+            </button>
+
+            <button
+              id="refresh-btn"
+              title="Generate a new address"
+              class="group flex items-center justify-center rounded-xl border border-light bg-white px-4 py-3 text-navy transition-all duration-300 hover:border-sky hover:text-sky active:scale-95"
+            >
+              <svg id="refresh-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="transition-transform duration-500 group-hover:rotate-180">
+                <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path>
+                <path d="M21 3v5h-5"></path>
+                <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path>
+                <path d="M3 21v-5h5"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Countdown Timer -->
+        <div id="timer-display" class="hidden mt-5 rounded-xl border border-light bg-ice/40 px-4 py-3">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-royal" aria-hidden="true">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+              </svg>
+              <span class="text-xs font-semibold uppercase tracking-wider text-navy/60">Self-destruct in</span>
+            </div>
+            <span id="timer-text" class="font-mono text-sm font-bold tracking-wide text-navy">30:00</span>
+          </div>
+          <div class="mt-2.5 h-1.5 w-full overflow-hidden rounded-full bg-light/60">
+            <div id="timer-bar" class="h-full rounded-full bg-royal transition-all duration-1000 ease-linear" style="width: 100%"></div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ===== Inbox ===== -->
+    <section id="inbox" class="pb-16">
+      <div class="mx-auto max-w-3xl">
+        <div class="mb-4 flex items-center justify-between">
+          <h2 class="text-xl font-bold text-navy">Inbox</h2>
+          <div class="flex items-center gap-3">
+            <span id="inbox-count" class="rounded-full bg-light/70 px-3 py-1 text-xs font-semibold text-navy">0 messages</span>
+            <button id="check-btn" class="flex items-center gap-1.5 text-sm font-semibold text-royal transition-colors hover:text-sky">
+              <svg id="check-spin" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path>
+                <path d="M21 3v5h-5"></path>
+                <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path>
+                <path d="M3 21v-5h5"></path>
+              </svg>
+              Refresh
+            </button>
+          </div>
+        </div>
+
+        <div class="overflow-hidden rounded-2xl border border-light bg-white/70 shadow-card backdrop-blur-xl">
+          <!-- Empty state -->
+          <div id="empty-state" class="flex flex-col items-center justify-center gap-4 px-6 py-20 text-center">
+            <span class="h-10 w-10 animate-spin rounded-full border-[3px] border-light border-t-sky" aria-hidden="true"></span>
+            <div>
+              <p class="font-semibold text-navy">Waiting for incoming emails...</p>
+              <p class="mt-1 text-sm text-navy/60">Messages sent to your address will appear here automatically.</p>
+            </div>
+          </div>
+
+          <!-- Message list -->
+          <ul id="message-list" class="hidden divide-y divide-light"></ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Features ===== -->
+    <section id="features" class="pb-20">
+      <h2 class="text-center text-2xl font-extrabold tracking-tight text-navy">Why TempAdd Flux?</h2>
+      <p class="mx-auto mt-2 max-w-md text-center text-pretty text-navy/70">Built for speed, privacy, and a spam-free life.</p>
+
+      <div class="mt-10 grid grid-cols-1 gap-5 sm:grid-cols-3">
+        <!-- Card -->
+        <div class="rounded-2xl border border-light bg-white/70 p-6 shadow-card backdrop-blur-xl transition-all duration-300 hover:-translate-y-1">
+          <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-ice text-royal">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+          </span>
+          <h3 class="mt-4 text-lg font-bold text-navy">Fast Generation</h3>
+          <p class="mt-1.5 text-sm leading-relaxed text-navy/70">Get a working inbox in milliseconds — no forms, no waiting, no confirmation links.</p>
+        </div>
+
+        <div class="rounded-2xl border border-light bg-white/70 p-6 shadow-card backdrop-blur-xl transition-all duration-300 hover:-translate-y-1">
+          <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-ice text-royal">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 8 7.89 5.26a2 2 0 0 0 2.22 0L21 8"></path><rect x="2" y="4" width="20" height="16" rx="2"></rect><path d="m2 4 9 7 9-7"></path></svg>
+          </span>
+          <h3 class="mt-4 text-lg font-bold text-navy">No Spam</h3>
+          <p class="mt-1.5 text-sm leading-relaxed text-navy/70">Keep your real inbox pristine. Throwaway addresses absorb the junk so you don't have to.</p>
+        </div>
+
+        <div class="rounded-2xl border border-light bg-white/70 p-6 shadow-card backdrop-blur-xl transition-all duration-300 hover:-translate-y-1">
+          <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-ice text-royal">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"></path></svg>
+          </span>
+          <h3 class="mt-4 text-lg font-bold text-navy">Privacy Secured</h3>
+          <p class="mt-1.5 text-sm leading-relaxed text-navy/70">Addresses self-destruct automatically. Your identity stays anonymous, always.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ===== Footer ===== -->
+  <footer class="border-t border-light bg-ice/80">
+    <div class="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 px-5 py-6 text-sm text-navy/60 sm:flex-row">
+      <p>&copy; <span id="year"></span> TempAdd Flux. Built for privacy.</p>
+      <p>Powered by the mail.tm API</p>
+    </div>
+  </footer>
+
+  <!-- ===== Message Modal ===== -->
+  <div id="modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
+    <div id="modal-overlay" class="absolute inset-0 bg-navy/50 backdrop-blur-sm"></div>
+    <div class="relative z-10 max-h-[85vh] w-full max-w-2xl overflow-hidden rounded-2xl border border-light bg-white shadow-card">
+      <div class="flex items-start justify-between gap-4 border-b border-light bg-ice/60 px-6 py-4">
+        <div class="min-w-0">
+          <h3 id="modal-subject" class="truncate text-lg font-bold text-navy">Subject</h3>
+          <p id="modal-from" class="mt-0.5 truncate text-sm text-navy/70">sender@example.com</p>
+        </div>
+        <button id="modal-close" aria-label="Close message" class="rounded-lg p-1.5 text-navy/60 transition-colors hover:bg-light/60 hover:text-navy">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+        </button>
+      </div>
+      <div id="modal-body" class="max-h-[60vh] overflow-y-auto px-6 py-5 text-sm leading-relaxed text-navy/90"></div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+{
+  "name": "tempadd-flux",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build:css": "tailwindcss -i ./src/input.css -o ./dist/output.css",
+    "watch:css": "tailwindcss -i ./src/input.css -o ./dist/output.css --watch",
+    "dev": "npm run build:css && serve . -l 3000",
+    "start": "npm run build:css && serve . -l 3000"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.3.0",
+    "serve": "^14.2.4",
+    "tailwindcss": "^4.3.0"
+  }
+}
