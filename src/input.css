@@ -1,5 +1,6 @@
 @import "tailwindcss";
 
+@source "../";
 @theme {
   --color-navy: #03045E;
   --color-royal: #0077B6;
