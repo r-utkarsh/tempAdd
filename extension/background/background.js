@@ -51,7 +51,7 @@ function showNotification(mail) {
 
   chrome.notifications.create(`tempadd-mail-${mail.id}`, {
     type: "basic",
-    iconUrl: chrome.runtime.getURL("assets/icon-128.png"),
+    iconUrl: chrome.runtime.getURL("assets/iconSpecial-128.png"),
     title: subject,
     message: `From: ${sender}`,
     priority: 2,

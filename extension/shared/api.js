@@ -41,6 +41,7 @@ const API = (() => {
         await new Promise(r => setTimeout(r, backoff));
       }
     }
+    throw new Error(`Request to ${url} failed after ${retries} retries`);
   }
 
   function createUsername() {

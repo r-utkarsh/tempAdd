@@ -40,9 +40,17 @@ function toast(message) {
 
 function sendMessage(data) {
   return new Promise((resolve) => {
-    chrome.runtime.sendMessage(data, (response) => {
-      resolve(response);
-    });
+    try {
+      chrome.runtime.sendMessage(data, (response) => {
+        if (chrome.runtime.lastError) {
+          resolve(undefined);
+        } else {
+          resolve(response);
+        }
+      });
+    } catch (e) {
+      resolve(undefined);
+    }
   });
 }
 

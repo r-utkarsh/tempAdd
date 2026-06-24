@@ -137,10 +137,6 @@ svg {
   animation: card-in 250ms ease-out;
 }
 
-.tempadd-card.hidden {
-  display: none;
-}
-
 .tempadd-card.minimized {
   max-height: 0;
   border: none;

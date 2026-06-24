@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
 /* ===== TempAdd Flux — Popup Styles ===== */
 /* Hand-written CSS replicating the Tailwind design system from the website */
 
@@ -721,5 +723,3 @@ img, svg {
   transform: translateX(18px);
 }
 
-/* ---------- Google Font Import ---------- */
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
