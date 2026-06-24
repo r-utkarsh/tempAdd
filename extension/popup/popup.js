@@ -153,6 +153,13 @@ function renderMessages(messages) {
 
 async function loadState() {
   const state = await sendMessage({ action: "getState" });
+  
+  // Load and set the state of the autofill toggle switch
+  chrome.storage.local.get({ autofillEnabled: true }, (res) => {
+    const toggle = $("autofill-toggle");
+    if (toggle) toggle.checked = res.autofillEnabled;
+  });
+
   if (!state) return;
 
   if (state.email) {
@@ -268,4 +275,10 @@ chrome.storage.onChanged.addListener((changes, area) => {
 });
 
 /* ---------- Init ---------- */
+const toggle = $("autofill-toggle");
+if (toggle) {
+  toggle.addEventListener("change", (e) => {
+    chrome.storage.local.set({ autofillEnabled: e.target.checked });
+  });
+}
 loadState();

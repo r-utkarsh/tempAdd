@@ -8,7 +8,7 @@
   /* ---------- Shadow DOM setup ---------- */
   const host = document.createElement("div");
   host.id = "tempadd-flux-host";
-  host.style.cssText = "all:initial;position:fixed;z-index:2147483647;";
+  host.style.cssText = "all:initial;position:fixed;top:0;left:0;width:100%;height:100%;z-index:2147483647;pointer-events:none;";
   document.body.appendChild(host);
 
   const shadow = host.attachShadow({ mode: "open" });
@@ -24,6 +24,13 @@
   let isMinimized = false;
   let seenIds = new Set();
   let currentEmail = "";
+  let activeInput = null;
+  let autofillEnabled = true;
+
+  // Load the current preference for inline suggestions
+  chrome.storage.local.get({ autofillEnabled: true }, (res) => {
+    autofillEnabled = res.autofillEnabled;
+  });
 
   /* ---------- Helper ---------- */
   function sendMessage(data) {
@@ -52,22 +59,21 @@
     return date.toLocaleDateString();
   }
 
-  /* ---------- FAB ---------- */
-  const fab = document.createElement("button");
-  fab.className = "tempadd-fab";
-  fab.setAttribute("aria-label", "Open TempAdd Flux temporary email");
-  fab.setAttribute("tabindex", "0");
-  fab.innerHTML = `
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+  /* ---------- Autofill Button ---------- */
+  const autofillBtn = document.createElement("button");
+  autofillBtn.className = "tempadd-autofill-btn";
+  autofillBtn.setAttribute("aria-label", "TempAdd Flux Autofill");
+  autofillBtn.setAttribute("tabindex", "-1");
+  autofillBtn.innerHTML = `
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
       <rect x="2" y="4" width="20" height="16" rx="2"></rect>
       <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
     </svg>
-    <span class="fab-badge hidden" aria-label="Unread emails"></span>
   `;
-  shadow.appendChild(fab);
+  shadow.appendChild(autofillBtn);
 
-  const fabBadge = fab.querySelector(".fab-badge");
+
 
   /* ---------- Card ---------- */
   const card = document.createElement("div");
@@ -131,8 +137,6 @@
         </button>
       </div>
 
-
-
       <!-- Inbox -->
       <div class="fc-inbox-header">
         <span class="fc-inbox-title">Inbox</span>
@@ -167,6 +171,7 @@
   const messageListEl = card.querySelector("[data-message-list]");
   const toastArea = card.querySelector("[data-toast-area]");
 
+
   /* ---------- Toast ---------- */
   function showToast(message) {
     const el = document.createElement("div");
@@ -181,31 +186,15 @@
     }, 2000);
   }
 
-  /* ---------- FAB / Card toggling ---------- */
-  fab.addEventListener("click", () => {
-    if (isMinimized) {
-      isMinimized = false;
-      card.classList.remove("minimized", "hidden");
-      return;
-    }
-    if (isCardOpen) {
-      closeCard();
-    } else {
-      openCard();
-    }
-  });
-
-  fab.addEventListener("keydown", (e) => {
-    if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      fab.click();
-    }
-  });
-
   function openCard() {
     isCardOpen = true;
     isMinimized = false;
     card.classList.remove("hidden", "minimized");
+    // Position card centered on viewport
+    card.style.top = `${(window.innerHeight - 520) / 2}px`;
+    card.style.left = `${(window.innerWidth - 370) / 2}px`;
+    card.style.right = "auto";
+    card.style.bottom = "auto";
     loadState();
     sendMessage({ action: "clearUnread" });
   }
@@ -383,25 +372,121 @@
     }
   }
 
-  /* ---------- Badge update ---------- */
+  /* ---------- Input Detection & Autofill Logic ---------- */
 
-  function updateFabBadge(count) {
-    if (count <= 0 || isCardOpen) {
-      fabBadge.classList.add("hidden");
-      fabBadge.textContent = "";
-    } else {
-      fabBadge.classList.remove("hidden");
-      fabBadge.textContent = count > 9 ? "9+" : String(count);
-    }
+  // Focus-based detection: whitelists elements representing email inputs
+  function isEmailInput(input) {
+    if (!input || input.readOnly || input.disabled) return false;
+    if (input.type === "email") return true;
+
+    const name = (input.name || "").toLowerCase();
+    const id = (input.id || "").toLowerCase();
+    const autocomplete = (input.getAttribute("autocomplete") || "").toLowerCase();
+    const placeholder = (input.getAttribute("placeholder") || "").toLowerCase();
+
+    const matchesEmail = (str) => str.includes("email") || str.includes("e-mail");
+
+    return matchesEmail(name) || matchesEmail(id) || matchesEmail(autocomplete) || matchesEmail(placeholder);
   }
+
+  function positionIcon(input) {
+    const rect = input.getBoundingClientRect();
+
+    // Position at the right end of the input (using viewport relative bounds)
+    const iconWidth = 24;
+    const iconHeight = 24;
+
+    const top = rect.top + (rect.height - iconHeight) / 2;
+    const left = rect.left + rect.width - iconWidth - 8;
+
+    autofillBtn.style.top = `${top}px`;
+    autofillBtn.style.left = `${left}px`;
+    autofillBtn.style.display = "flex";
+  }
+
+  function fillInput(input, value) {
+    if (!input) return;
+
+    const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")?.set;
+    if (nativeSetter) {
+      nativeSetter.call(input, value);
+    } else {
+      input.value = value;
+    }
+
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+
+    input.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "Enter" }));
+    input.dispatchEvent(new KeyboardEvent("keyup", { bubbles: true, key: "Enter" }));
+  }
+
+  function setActiveInput(input) {
+    activeInput = input;
+    positionIcon(input);
+    loadState();
+  }
+
+  function clearActiveInput() {
+    activeInput = null;
+    autofillBtn.style.display = "none";
+  }
+
+  /* ---------- Event Listeners for Autofill UI ---------- */
+
+  document.addEventListener("focusin", (e) => {
+    if (!autofillEnabled) return;
+    const target = e.target;
+    if (target && target.tagName === "INPUT" && isEmailInput(target)) {
+      setActiveInput(target);
+    }
+  });
+
+  document.addEventListener("focusout", (e) => {
+    if (activeInput && e.target === activeInput) {
+      setTimeout(() => {
+        const focusedEl = shadow.activeElement;
+        if (!focusedEl && !isCardOpen) {
+          clearActiveInput();
+        }
+      }, 200);
+    }
+  });
+
+  window.addEventListener("resize", () => {
+    if (activeInput) {
+      positionIcon(activeInput);
+    }
+  });
+
+  document.addEventListener("scroll", () => {
+    if (activeInput) {
+      positionIcon(activeInput);
+    }
+  }, true);
+
+  autofillBtn.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (activeInput && currentEmail) {
+      fillInput(activeInput, currentEmail);
+      // Give feedback toast
+      showToast("Autofilled!");
+    }
+  });
+
+  autofillBtn.addEventListener("mousedown", (e) => e.preventDefault());
 
   /* ---------- Live storage updates ---------- */
 
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area !== "local") return;
 
-    if (changes.unreadCount) {
-      updateFabBadge(changes.unreadCount.newValue || 0);
+    if (changes.autofillEnabled) {
+      autofillEnabled = changes.autofillEnabled.newValue;
+      if (!autofillEnabled) {
+        clearActiveInput();
+      }
     }
 
     if (changes.messages && isCardOpen) {
@@ -419,7 +504,7 @@
       loadState();
     }
 
-    // Push updated state to website (merged from second listener)
+    // Push updated state to website
     sendMessage({ action: "getState" }).then(pushStateToWebsite);
   });
 
@@ -459,13 +544,6 @@
       window.dispatchEvent(new CustomEvent("TEMPADD_OPEN_EMAIL", {
         detail: { mailId: message.mailId }
       }));
-    }
-  });
-
-  /* ---------- Initial badge load ---------- */
-  sendMessage({ action: "getState" }).then((state) => {
-    if (state && state.unreadCount) {
-      updateFabBadge(state.unreadCount);
     }
   });
 })();

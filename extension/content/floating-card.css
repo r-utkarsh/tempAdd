@@ -80,57 +80,41 @@ svg {
   border-radius: 4px;
 }
 
-/* ---------- FAB (Floating Action Button) ---------- */
-.tempadd-fab {
-  position: fixed;
-  bottom: 24px;
-  right: 24px;
+/* ---------- Autofill Button ---------- */
+.tempadd-autofill-btn {
+  position: absolute;
   z-index: 2147483646;
-  width: 52px;
-  height: 52px;
+  width: 24px;
+  height: 24px;
   border-radius: var(--radius-full);
   background: linear-gradient(135deg, var(--royal), var(--sky));
   color: var(--white);
-  display: flex;
+  display: none; /* managed by JS */
   align-items: center;
   justify-content: center;
-  box-shadow: var(--shadow-fab);
+  box-shadow: 0 2px 8px rgba(3, 4, 94, 0.2);
   cursor: pointer;
-  transition: transform var(--transition-normal), box-shadow var(--transition-normal);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
   border: none;
+  pointer-events: auto;
 }
 
-.tempadd-fab:hover {
-  transform: scale(1.08);
-  box-shadow: 0 12px 35px -5px rgba(3, 4, 94, 0.5);
+.tempadd-autofill-btn:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(3, 4, 94, 0.35);
 }
 
-.tempadd-fab:active {
+.tempadd-autofill-btn:active {
   transform: scale(0.95);
 }
 
-.tempadd-fab .fab-badge {
-  position: absolute;
-  top: -4px;
-  right: -4px;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 5px;
-  border-radius: var(--radius-full);
-  background-color: var(--red);
-  color: var(--white);
-  font-size: 10px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 2px solid var(--white);
-  line-height: 1;
+.tempadd-autofill-btn svg {
+  width: 14px;
+  height: 14px;
+  stroke: var(--white);
 }
 
-.tempadd-fab .fab-badge.hidden {
-  display: none;
-}
+
 
 /* ---------- Floating Card ---------- */
 .tempadd-card {
