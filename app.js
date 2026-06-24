@@ -127,6 +127,7 @@ function renderMessages(mails) {
 }
 
 async function openMessage(id) {
+  console.log("[TempAdd Debug] openMessage called. ID:", id, "Token:", token);
   modalSubject.textContent = "Loading...";
   modalFrom.textContent = "";
   modalBody.innerHTML =

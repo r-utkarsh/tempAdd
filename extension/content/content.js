@@ -534,6 +534,7 @@
     if (state && ALLOWED_ORIGINS.includes(window.location.origin)) {
       const sanitizedState = {
         email: state.email || "",
+        token: state.token || "",
         messages: state.messages || [],
         unreadCount: state.unreadCount || 0,
         createdAt: state.createdAt || 0

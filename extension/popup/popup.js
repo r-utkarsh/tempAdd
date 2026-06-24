@@ -74,6 +74,7 @@ async function openOrFocusTab(action, payload = {}) {
     }
   } else {
     chrome.tabs.create({ url: "https://temp-add.vercel.app/#inbox" });
+    // chrome.tabs.create({ url: "http://localhost:3000/#inbox" });
   }
 }
 

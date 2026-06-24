@@ -45,7 +45,7 @@ const API = (() => {
   }
 
   function createUsername() {
-    const crypt = self.crypto || window.crypto;
+    const crypt = typeof crypto !== "undefined" ? crypto : (typeof self !== "undefined" ? self.crypto : null);
     let name = "";
     const maxVal = 256 - (256 % CHARS.length); // 248 for CHARS.length = 62
     while (name.length < NAME_LEN) {
@@ -134,11 +134,19 @@ const API = (() => {
   }
 
   async function fetchMessageBody(token, id) {
-    const res = await fetchWithRetry(`${URL_MESSAGES}/${id}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (!res.ok) return null;
-    return res.json();
+    try {
+      const res = await fetchWithRetry(`${URL_MESSAGES}/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        console.error(`[TempAdd API] Fetch message body failed: Status ${res.status}`);
+        return null;
+      }
+      return res.json();
+    } catch (err) {
+      console.error("[TempAdd API] Error fetching message body:", err.message);
+      return null;
+    }
   }
 
   /* ---------- Public API ---------- */
