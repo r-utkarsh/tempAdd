@@ -80,7 +80,7 @@
   autofillBtn.setAttribute("tabindex", "-1");
   autofillBtn.style.padding = "0";
   autofillBtn.innerHTML = `
-    <img src="${chrome.runtime.getURL("assets/iconSpecial-48.png")}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover; pointer-events: none;" />
+    <img src="${chrome.runtime.getURL("assets/newBlueLogo-48.png")}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover; pointer-events: none;" />
   `;
   shadow.appendChild(autofillBtn);
 
