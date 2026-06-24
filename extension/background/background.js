@@ -89,7 +89,6 @@ async function _doCreateMailbox() {
 
     return { success: true, email };
   } catch (err) {
-    console.error("[TempAdd] Mailbox creation failed:", err.message);
     return { success: false, error: err.message };
   } finally {
     activeCreationPromise = null;
@@ -105,7 +104,6 @@ async function pollInbox() {
   // Check if mailbox has expired
   const elapsed = Date.now() - state.createdAt;
   if (elapsed >= API.MAILBOX_LIFETIME_MS) {
-    console.log("[TempAdd] Mailbox expired, creating new one");
     await createNewMailbox();
     return;
   }
@@ -120,23 +118,18 @@ async function pollInbox() {
       showNotification(mail);
     }
 
-    // Update seen IDs
-    const updatedSeenIds = [
-      ...new Set([...state.seenIds, ...messages.map((m) => m.id)]),
-    ];
-
-    // Calculate unread count (messages received since last popup open)
-    const unreadCount = newMails.length + state.unreadCount;
+    // Do not automatically mark all fetched messages as seen.
+    // Calculate unreadCount as the absolute number of fetched messages not present in seenIds:
+    const unreadCount = newMails.length;
 
     await setState({
       messages,
-      seenIds: updatedSeenIds,
       unreadCount: Math.max(0, unreadCount),
     });
 
     updateBadge(unreadCount);
   } catch (err) {
-    console.error("[TempAdd] Poll error:", err.message);
+    // Suppressed error in production
   }
 }
 
@@ -211,7 +204,11 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       }
 
       case "clearUnread": {
-        await setState({ unreadCount: 0 });
+        const state = await getState();
+        const updatedSeenIds = [
+          ...new Set([...state.seenIds, ...state.messages.map((m) => m.id)]),
+        ];
+        await setState({ seenIds: updatedSeenIds, unreadCount: 0 });
         updateBadge(0);
         return { success: true };
       }
@@ -238,7 +235,6 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 /* ---------- Install / Startup ---------- */
 
 chrome.runtime.onInstalled.addListener(async () => {
-  console.log("[TempAdd] Extension installed");
   const state = await getState();
 
   if (!state.email || !state.token) {
@@ -256,6 +252,14 @@ chrome.runtime.onInstalled.addListener(async () => {
 });
 
 chrome.runtime.onStartup.addListener(async () => {
-  console.log("[TempAdd] Browser started — generating fresh mailbox");
+  const state = await getState();
+  if (state.email && state.token) {
+    const elapsed = Date.now() - state.createdAt;
+    if (elapsed < API.MAILBOX_LIFETIME_MS) {
+      ensureAlarm();
+      updateBadge(state.unreadCount);
+      return;
+    }
+  }
   await createNewMailbox();
 });

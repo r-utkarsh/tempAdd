@@ -21,9 +21,9 @@ const API = (() => {
       try {
         const res = await fetch(url, { ...options, signal: controller.signal });
         clearTimeout(timeoutId);
-        if (res.status === 429) {
+        if (res.status === 429 || (res.status >= 500 && res.status < 600)) {
           const backoff = delay * 2 * (i + 1);
-          console.warn(`[TempAdd API] Rate limited (429) on ${url}. Retrying in ${backoff}ms...`);
+          console.warn(`[TempAdd API] Request failed (${res.status}) on ${url}. Retrying in ${backoff}ms...`);
           await new Promise(r => setTimeout(r, backoff));
           continue;
         }
@@ -45,11 +45,15 @@ const API = (() => {
 
   function createUsername() {
     const crypt = self.crypto || window.crypto;
-    const array = new Uint32Array(NAME_LEN);
-    crypt.getRandomValues(array);
     let name = "";
-    for (let i = 0; i < NAME_LEN; i++) {
-      name += CHARS[array[i] % CHARS.length];
+    const maxVal = 256 - (256 % CHARS.length); // 248 for CHARS.length = 62
+    while (name.length < NAME_LEN) {
+      const array = new Uint8Array(1);
+      crypt.getRandomValues(array);
+      const val = array[0];
+      if (val < maxVal) {
+        name += CHARS[val % CHARS.length];
+      }
     }
     return name;
   }

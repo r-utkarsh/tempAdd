@@ -65,7 +65,7 @@ function playNotificationSound() {
     oscillator.start(audioCtx.currentTime);
     oscillator.stop(audioCtx.currentTime + 0.5);
   } catch (e) {
-    console.log("Audio not supported or blocked");
+    // Audio context initialization error suppressed in production
   }
 }
 
@@ -146,7 +146,15 @@ async function openMessage(id) {
   }>`;
 
   if (full.html && full.html.length) {
-    modalBody.innerHTML = full.html.join("");
+    const iframe = document.createElement("iframe");
+    iframe.setAttribute("sandbox", "");
+    iframe.style.width = "100%";
+    iframe.style.height = "400px";
+    iframe.style.border = "none";
+    iframe.style.backgroundColor = "#ffffff";
+    iframe.srcdoc = full.html.join("");
+    modalBody.innerHTML = "";
+    modalBody.appendChild(iframe);
   } else {
     modalBody.innerHTML = `<pre class="whitespace-pre-wrap font-sans">${API.escapeHtml(
       full.text || "(empty message)"
@@ -191,7 +199,7 @@ async function pollInbox(manual = false) {
     }
     renderMessages(messages);
   } catch (e) {
-    console.log("[v0] poll error:", e.message);
+    // Poll error suppressed in production
   } finally {
     if (manual) {
       setTimeout(() => checkSpin.classList.remove("animate-spin"), 600);
@@ -313,7 +321,6 @@ async function newMailbox() {
     await pollInbox();
     pollTimer = setInterval(() => pollInbox(false), 4000);
   } catch (err) {
-    console.log("[v0] init error:", err.message);
     emailField.value = "Error — click refresh to retry";
     toast("Something went wrong. Please try again.");
   }
@@ -402,7 +409,6 @@ window.addEventListener("message", (e) => {
 setTimeout(() => {
   if (window.tempaddExtensionInstalled) {
     usingExtensionState = true;
-    console.log("[TempAdd] Extension detected - skipping standalone init.");
   } else {
     init();
   }

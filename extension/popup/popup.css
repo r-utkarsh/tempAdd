@@ -40,12 +40,15 @@
 html {
   font-size: 14px;
   scroll-behavior: smooth;
+  border-radius: var(--radius-2xl);
+  overflow: hidden;
+  background-color: transparent;
 }
 
 body {
-  width: 420px;
-  min-width: 380px;
-  max-width: 450px;
+  width: 320px;
+  min-width: 320px;
+  max-width: 320px;
   height: auto;
   overflow-y: auto;
   font-family: var(--font-sans);
@@ -54,6 +57,7 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   line-height: 1.5;
+  border-radius: var(--radius-2xl);
 }
 
 /* ---------- Animations ---------- */
@@ -65,6 +69,8 @@ body {
 .app-root {
   animation: popupOpen 250ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
   will-change: transform, opacity;
+  border-radius: var(--radius-2xl);
+  overflow: hidden;
 }
 
 @keyframes messageEnter {
@@ -266,8 +272,9 @@ img, svg {
 /* ---------- Generator ---------- */
 .email-row {
   display: flex;
-  align-items: center;
-  gap: 0.5rem;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.75rem;
 }
 
 .email-field-wrap {
@@ -294,8 +301,8 @@ img, svg {
 .email-actions {
   display: flex;
   align-items: center;
-  gap: 0.375rem;
-  flex-shrink: 0;
+  justify-content: flex-end;
+  gap: 0.5rem;
 }
 
 /* ---------- Timer ---------- */

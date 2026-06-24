@@ -11,7 +11,7 @@
   host.style.cssText = "all:initial;position:fixed;top:0;left:0;width:100%;height:100%;z-index:2147483647;pointer-events:none;";
   document.body.appendChild(host);
 
-  const shadow = host.attachShadow({ mode: "open" });
+  const shadow = host.attachShadow({ mode: "closed" });
 
   /* Load isolated CSS */
   const link = document.createElement("link");
@@ -35,9 +35,22 @@
   /* ---------- Helper ---------- */
   function sendMessage(data) {
     return new Promise((resolve) => {
-      chrome.runtime.sendMessage(data, (response) => {
-        resolve(response);
-      });
+      try {
+        if (!chrome.runtime || !chrome.runtime.id) {
+          resolve(undefined);
+          return;
+        }
+        chrome.runtime.sendMessage(data, (response) => {
+          const err = chrome.runtime.lastError;
+          if (err) {
+            resolve(undefined);
+          } else {
+            resolve(response);
+          }
+        });
+      } catch (e) {
+        resolve(undefined);
+      }
     });
   }
 
@@ -62,6 +75,7 @@
   /* ---------- Autofill Button ---------- */
   const autofillBtn = document.createElement("button");
   autofillBtn.className = "tempadd-autofill-btn";
+  autofillBtn.style.display = "none";
   autofillBtn.setAttribute("aria-label", "TempAdd Flux Autofill");
   autofillBtn.setAttribute("tabindex", "-1");
   autofillBtn.innerHTML = `
@@ -77,7 +91,8 @@
 
   /* ---------- Card ---------- */
   const card = document.createElement("div");
-  card.className = "tempadd-card hidden";
+  card.className = "tempadd-card";
+  card.style.display = "none";
   card.setAttribute("role", "dialog");
   card.setAttribute("aria-label", "TempAdd Flux temporary email widget");
   card.innerHTML = `
@@ -189,7 +204,8 @@
   function openCard() {
     isCardOpen = true;
     isMinimized = false;
-    card.classList.remove("hidden", "minimized");
+    card.style.display = "flex";
+    card.classList.remove("minimized");
     // Position card centered on viewport
     card.style.top = `${(window.innerHeight - 520) / 2}px`;
     card.style.left = `${(window.innerWidth - 370) / 2}px`;
@@ -202,7 +218,7 @@
   function closeCard() {
     isCardOpen = false;
     isMinimized = false;
-    card.classList.add("hidden");
+    card.style.display = "none";
   }
 
   /* ---------- Card controls ---------- */
@@ -215,7 +231,7 @@
     switch (action) {
       case "minimize":
         isMinimized = true;
-        card.classList.add("hidden");
+        card.style.display = "none";
         break;
       case "close":
         closeCard();
@@ -297,9 +313,9 @@
       li.className = "fc-message-item";
       li.setAttribute("tabindex", "0");
       li.setAttribute("role", "listitem");
-      li.setAttribute("aria-label",
-        `Email from ${mail.from?.name || mail.from?.address || "unknown"}: ${mail.subject || "no subject"}`
-      );
+      const cleanFrom = escapeHtml(mail.from?.name || mail.from?.address || "unknown");
+      const cleanSubject = escapeHtml(mail.subject || "no subject");
+      li.setAttribute("aria-label", `Email from ${cleanFrom}: ${cleanSubject}`);
 
       const initial = (mail.from?.name || mail.from?.address || "?")
         .charAt(0)
@@ -416,9 +432,6 @@
 
     input.dispatchEvent(new Event("input", { bubbles: true }));
     input.dispatchEvent(new Event("change", { bubbles: true }));
-
-    input.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "Enter" }));
-    input.dispatchEvent(new KeyboardEvent("keyup", { bubbles: true, key: "Enter" }));
   }
 
   function setActiveInput(input) {
@@ -504,8 +517,10 @@
       loadState();
     }
 
-    // Push updated state to website
-    sendMessage({ action: "getState" }).then(pushStateToWebsite);
+    // Push updated state to website only if email or messages changed
+    if (changes.email || changes.messages) {
+      sendMessage({ action: "getState" }).then(pushStateToWebsite);
+    }
   });
 
   /* ---------- Extension / Website Sync ---------- */
@@ -518,8 +533,14 @@
   ];
 
   function pushStateToWebsite(state) {
-    if (state) {
-      window.postMessage({ type: "TEMPADD_EXTENSION_STATE", state: state }, window.location.origin);
+    if (state && ALLOWED_ORIGINS.includes(window.location.origin)) {
+      const sanitizedState = {
+        email: state.email || "",
+        messages: state.messages || [],
+        unreadCount: state.unreadCount || 0,
+        createdAt: state.createdAt || 0
+      };
+      window.postMessage({ type: "TEMPADD_EXTENSION_STATE", state: sanitizedState }, window.location.origin);
     }
   }
 

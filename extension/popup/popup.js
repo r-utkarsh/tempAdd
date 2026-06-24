@@ -87,7 +87,7 @@ function renderMessages(messages) {
   messageList.innerHTML = "";
 
   // Feature 4: Sort by newest and show max 2 messages
-  const sortedMails = mails.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  const sortedMails = [...mails].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   const recentMessages = sortedMails.slice(0, 2);
 
   // Feature 5: Show overflow handling
@@ -104,7 +104,9 @@ function renderMessages(messages) {
     li.className = "message-item";
     li.setAttribute("role", "listitem");
     li.setAttribute("tabindex", "0");
-    li.setAttribute("aria-label", `Email from ${mail.from?.name || mail.from?.address || "unknown"}: ${mail.subject || "no subject"}`);
+    const cleanFrom = API.escapeHtml(mail.from?.name || mail.from?.address || "unknown");
+    const cleanSubject = API.escapeHtml(mail.subject || "no subject");
+    li.setAttribute("aria-label", `Email from ${cleanFrom}: ${cleanSubject}`);
 
     const initial = (mail.from?.name || mail.from?.address || "?")
       .charAt(0)
