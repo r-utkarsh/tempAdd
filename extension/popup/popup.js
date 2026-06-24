@@ -60,7 +60,8 @@ async function openOrFocusTab(action, payload = {}) {
       "http://localhost:3000/*",
       "http://127.0.0.1:3000/*",
       "http://localhost:5500/*",
-      "http://127.0.0.1:5500/*"
+      "http://127.0.0.1:5500/*",
+      "https://temp-add.vercel.app/*"
     ]
   });
   if (tabs.length > 0) {
@@ -72,7 +73,7 @@ async function openOrFocusTab(action, payload = {}) {
       chrome.tabs.sendMessage(tab.id, { action: "OPEN_EMAIL", mailId: payload.mailId });
     }
   } else {
-    chrome.tabs.create({ url: "http://localhost:3000/#inbox" });
+    chrome.tabs.create({ url: "https://temp-add.vercel.app/#inbox" });
   }
 }
 
