@@ -13,11 +13,11 @@ let email = "";
 let password = "";
 let token = "";
 let pollTimer = null;
-let countdownTimer = null;
 let seenMessageIds = new Set();
 let currentMessages = [];
+let usingExtensionState = false;
 
-const MAILBOX_LIFETIME_MS = 30 * 60 * 1000; // 30 minutes
+const MAILBOX_LIFETIME_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 // ---- DOM refs ----
 const $ = (id) => document.getElementById(id);
@@ -31,9 +31,6 @@ const checkSpin = $("check-spin");
 const emptyState = $("empty-state");
 const messageList = $("message-list");
 const inboxCount = $("inbox-count");
-const timerDisplay = $("timer-display");
-const timerText = $("timer-text");
-const timerBar = $("timer-bar");
 const headerCopyBtn = $("header-copy-btn");
 const modal = $("modal");
 const modalOverlay = $("modal-overlay");
@@ -222,20 +219,20 @@ function renderMessages(messages) {
     const initial = (mail.from?.name || mail.from?.address || "?").charAt(0).toUpperCase();
 
     li.innerHTML = `
-      <span class="mt-0.5 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-royal text-sm font-bold text-white">${escapeHtml(initial)}</span>
+      <span class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-royal text-sm font-bold text-white">${escapeHtml(initial)}</span>
       <div class="min-w-0 flex-1">
         <div class="flex items-center justify-between gap-2">
-          <p class="truncate text-sm font-bold text-navy">${escapeHtml(
+          <p class="min-w-0 truncate text-sm font-bold text-navy">${escapeHtml(
             mail.from?.name || mail.from?.address || "Unknown sender"
           )}</p>
-          <span class="flex-shrink-0 text-xs text-navy/50">${relativeTime(
+          <span class="shrink-0 text-xs text-navy/50">${relativeTime(
             mail.createdAt
           )}</span>
         </div>
-        <p class="mt-0.5 flex items-center gap-2 truncate text-sm font-medium text-navy/90">
+        <p class="mt-0.5 min-w-0 flex items-center gap-2 truncate text-sm font-medium text-navy/90">
           ${hasAttachments ? `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-navy/50"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>` : ""}${
             isNew
-              ? '<span class="inline-block h-2 w-2 flex-shrink-0 rounded-full bg-sky"></span>'
+              ? '<span class="inline-block h-2 w-2 shrink-0 rounded-full bg-sky"></span>'
               : ""
           }
           ${escapeHtml(mail.subject || "(no subject)")}
@@ -292,9 +289,17 @@ function closeModal() {
 }
 
 /* ---------- Polling ---------- */
-async function pollInbox(showSpinner = false) {
-  if (!token) return;
-  if (showSpinner) checkSpin.classList.add("animate-spin");
+async function pollInbox(manual = false) {
+  if (usingExtensionState) {
+    if (manual) {
+      checkSpin.classList.add("animate-spin");
+      window.postMessage({ type: "TEMPADD_REQUEST_REFRESH" }, "*");
+      setTimeout(() => checkSpin.classList.remove("animate-spin"), 600);
+    }
+    return;
+  }
+
+  if (manual) checkSpin.classList.add("animate-spin");
   try {
     const prevCount = currentMessages.length;
     const rawData = await fetchMessages();
@@ -310,28 +315,28 @@ async function pollInbox(showSpinner = false) {
   } catch (e) {
     console.log("[v0] poll error:", e.message);
   } finally {
-    if (showSpinner) {
+    if (manual) {
       setTimeout(() => checkSpin.classList.remove("animate-spin"), 600);
     }
   }
 }
 
-/* ---------- localStorage helpers ---------- */
+/* ---------- sessionStorage helpers ---------- */
 function saveSession() {
-  localStorage.setItem("tempadd_email", email);
-  localStorage.setItem("tempadd_password", password);
-  localStorage.setItem("tempadd_token", token);
+  sessionStorage.setItem("tempadd_email", email);
+  sessionStorage.setItem("tempadd_password", password);
+  sessionStorage.setItem("tempadd_token", token);
   // Only set creation time if it doesn't already exist (don't overwrite on re-save)
-  if (!localStorage.getItem("tempadd_created")) {
-    localStorage.setItem("tempadd_created", Date.now().toString());
+  if (!sessionStorage.getItem("tempadd_created")) {
+    sessionStorage.setItem("tempadd_created", Date.now().toString());
   }
 }
 
 function loadSession() {
-  const savedEmail = localStorage.getItem("tempadd_email");
-  const savedPassword = localStorage.getItem("tempadd_password");
-  const savedToken = localStorage.getItem("tempadd_token");
-  const savedCreated = localStorage.getItem("tempadd_created");
+  const savedEmail = sessionStorage.getItem("tempadd_email");
+  const savedPassword = sessionStorage.getItem("tempadd_password");
+  const savedToken = sessionStorage.getItem("tempadd_token");
+  const savedCreated = sessionStorage.getItem("tempadd_created");
   if (savedEmail && savedToken) {
     return {
       email: savedEmail,
@@ -344,80 +349,17 @@ function loadSession() {
 }
 
 function clearSession() {
-  localStorage.removeItem("tempadd_email");
-  localStorage.removeItem("tempadd_password");
-  localStorage.removeItem("tempadd_token");
-  localStorage.removeItem("tempadd_created");
-}
-
-/* ---------- Countdown timer ---------- */
-function startCountdown(createdAt) {
-  clearInterval(countdownTimer);
-
-  function tick() {
-    const elapsed = Date.now() - createdAt;
-    const remaining = MAILBOX_LIFETIME_MS - elapsed;
-
-    if (remaining <= 0) {
-      // Time's up — destroy session and create a new mailbox
-      clearInterval(countdownTimer);
-      timerText.textContent = "00:00";
-      toast("Mailbox expired — generating a new one.");
-      clearSession();
-      newMailbox();
-      return;
-    }
-
-    const totalSec = Math.ceil(remaining / 1000);
-    const mins = Math.floor(totalSec / 60);
-    const secs = totalSec % 60;
-    timerText.textContent = `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
-
-    // Update progress bar
-    const pct = Math.max(0, (remaining / MAILBOX_LIFETIME_MS) * 100);
-    timerBar.style.width = `${pct}%`;
-
-    // Change bar color in last 5 minutes
-    if (remaining <= 5 * 60 * 1000) {
-      timerBar.classList.remove("bg-royal");
-      timerBar.classList.add("bg-red-500");
-    } else {
-      timerBar.classList.remove("bg-red-500");
-      timerBar.classList.add("bg-royal");
-    }
-
-    // Visual urgency: turn red in the last 5 minutes
-    if (remaining <= 5 * 60 * 1000) {
-      timerDisplay.classList.add("timer-urgent");
-    } else {
-      timerDisplay.classList.remove("timer-urgent");
-    }
-  }
-
-  tick(); // run immediately
-  countdownTimer = setInterval(tick, 1000);
-
-  // Show the timer element
-  timerDisplay.classList.remove("hidden");
-  timerDisplay.classList.add("block");
-}
-
-function hideCountdown() {
-  clearInterval(countdownTimer);
-  timerDisplay.classList.add("hidden");
-  timerDisplay.classList.remove("block");
-  timerDisplay.classList.remove("timer-urgent");
-  if (timerBar) {
-    timerBar.style.width = "100%";
-    timerBar.classList.remove("bg-red-500");
-    timerBar.classList.add("bg-royal");
-  }
+  sessionStorage.removeItem("tempadd_email");
+  sessionStorage.removeItem("tempadd_password");
+  sessionStorage.removeItem("tempadd_token");
+  sessionStorage.removeItem("tempadd_created");
 }
 
 /* ---------- Init / lifecycle ---------- */
 async function init() {
+  if (usingExtensionState) return;
+
   clearInterval(pollTimer);
-  hideCountdown();
   seenMessageIds = new Set();
   currentMessages = [];
 
@@ -427,8 +369,10 @@ async function init() {
     // Check if the saved session has already expired
     const elapsed = Date.now() - saved.created;
     if (elapsed >= MAILBOX_LIFETIME_MS) {
-      clearSession();
-      await newMailbox();
+      if (!usingExtensionState) {
+        clearSession();
+        await newMailbox();
+      }
       return;
     }
 
@@ -443,7 +387,6 @@ async function init() {
     try {
       await pollInbox();
       pollTimer = setInterval(() => pollInbox(false), 4000);
-      startCountdown(saved.created);
       return; // restored successfully
     } catch {
       // Token expired or invalid — fall through to create a new one
@@ -456,8 +399,12 @@ async function init() {
 }
 
 async function newMailbox() {
+  if (usingExtensionState) {
+    window.postMessage({ type: "TEMPADD_REQUEST_NEW_MAILBOX" }, "*");
+    return;
+  }
+
   clearInterval(pollTimer);
-  hideCountdown();
   seenMessageIds = new Set();
   currentMessages = [];
   token = "";
@@ -473,11 +420,8 @@ async function newMailbox() {
     emailField.value = email;
     headerCopyBtn.textContent = "Copy Email";
     // Clear old timestamp so saveSession writes a fresh one
-    localStorage.removeItem("tempadd_created");
+    sessionStorage.removeItem("tempadd_created");
     saveSession();
-
-    const createdAt = parseInt(localStorage.getItem("tempadd_created"), 10);
-    startCountdown(createdAt);
 
     await pollInbox();
     pollTimer = setInterval(() => pollInbox(false), 4000);
@@ -529,9 +473,49 @@ checkBtn.addEventListener("click", () => pollInbox(true));
 
 modalClose.addEventListener("click", closeModal);
 modalOverlay.addEventListener("click", closeModal);
-document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape") closeModal();
+window.addEventListener("TEMPADD_OPEN_EMAIL", (event) => {
+  if (event.detail && event.detail.mailId) {
+    openMessage(event.detail.mailId);
+  }
+});
+
+/* ---------- Extension Synchronization ---------- */
+window.addEventListener("message", (e) => {
+  if (!e.data || !e.data.type) return;
+
+  if (e.data.type === "TEMPADD_EXTENSION_STATE") {
+    usingExtensionState = true;
+    
+    // Disable local polling
+    clearInterval(pollTimer);
+    
+    const state = e.data.state;
+    
+    if (state.email) {
+      email = state.email;
+      token = state.token || token;
+      
+      emailField.value = email;
+      headerCopyBtn.textContent = "Copy Email";
+      
+      // Convert extension messages format to app.js format
+      const mails = state.messages || [];
+      renderMessages({ "hydra:member": mails });
+    } else {
+      emailField.value = "Generating address...";
+      headerCopyBtn.textContent = "Get Email";
+      renderMessages({ "hydra:member": [] });
+      window.postMessage({ type: "TEMPADD_REQUEST_NEW_MAILBOX" }, "*");
+    }
+  }
 });
 
 // Kick things off
-init();
+setTimeout(() => {
+  if (window.tempaddExtensionInstalled) {
+    usingExtensionState = true;
+    console.log("[TempAdd] Extension detected - skipping standalone init.");
+  } else {
+    init();
+  }
+}, 50);

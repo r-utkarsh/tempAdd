@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TempAdd Flux</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+
+<body>
+  <div id="app-root" class="app-root">
+    <!-- ===== Header ===== -->
+  <header class="header" role="banner">
+    <div class="header-inner">
+      <div class="brand" role="link" tabindex="0" aria-label="Open TempAdd website">
+        <span class="brand-icon" aria-hidden="true">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+            <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
+          </svg>
+        </span>
+        <span class="brand-text">TempAdd <span class="brand-accent">Flux</span></span>
+      </div>
+      <button id="header-copy-btn" class="btn-primary btn-sm" aria-label="Copy email address">
+        Copy Email
+      </button>
+    </div>
+  </header>
+
+  <!-- ===== Main Content ===== -->
+  <main class="main" role="main">
+
+    <!-- Generator Card -->
+    <section class="card generator-card" aria-labelledby="gen-label">
+      <label id="gen-label" class="card-label">Your temporary address</label>
+
+      <div class="email-row">
+        <div class="email-field-wrap">
+          <input id="email-field" type="text" readonly value="Loading..."
+            aria-label="Generated temporary email address" class="email-input" />
+        </div>
+
+        <div class="email-actions">
+          <button id="copy-btn" class="btn-primary" title="Copy to clipboard" aria-label="Copy email to clipboard">
+            <svg id="copy-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+              fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+              aria-hidden="true">
+              <rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect>
+              <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path>
+            </svg>
+            <span id="copy-label">Copy</span>
+          </button>
+
+          <button id="refresh-btn" class="btn-outline" title="Generate a new address"
+            aria-label="Generate new email address">
+            <svg id="refresh-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+              fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+              aria-hidden="true">
+              <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path>
+              <path d="M21 3v5h-5"></path>
+              <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path>
+              <path d="M3 21v-5h5"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+
+    </section>
+
+    <!-- ===== Inbox ===== -->
+    <section class="inbox-section" aria-labelledby="inbox-heading">
+      <div class="inbox-header">
+        <h2 id="inbox-heading" class="inbox-title">Inbox</h2>
+        <div class="inbox-actions">
+          <span id="inbox-count" class="badge" aria-live="polite">0 messages</span>
+          <button id="check-btn" class="btn-text" aria-label="Refresh inbox">
+            <svg id="check-spin" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+              fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+              aria-hidden="true">
+              <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path>
+              <path d="M21 3v5h-5"></path>
+              <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path>
+              <path d="M3 21v-5h5"></path>
+            </svg>
+            Refresh
+          </button>
+        </div>
+      </div>
+
+      <div class="inbox-card">
+        <!-- Empty state -->
+        <div id="empty-state" class="empty-state">
+          <span class="spinner" aria-hidden="true"></span>
+          <div>
+            <p class="empty-title">Waiting for incoming emails...</p>
+            <p class="empty-sub">Messages sent to your address will appear here automatically.</p>
+          </div>
+        </div>
+
+        <!-- Message list -->
+        <ul id="message-list" class="message-list hidden" role="list" aria-label="Email messages"></ul>
+        
+        <div id="view-all-wrap" class="view-all-wrap hidden">
+          <button id="view-all-btn" class="btn-text" aria-label="View all messages">View all messages &rarr;</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+    <!-- ===== Toast Container ===== -->
+    <div id="toast-container" class="toast-container" aria-live="assertive" aria-atomic="true"></div>
+  </div>
+
+  <script src="../shared/api.js"></script>
+  <script src="popup.js"></script>
+</body>
+
+</html>
