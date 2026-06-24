@@ -1,12 +1,4 @@
-/* ===== TempAdd Flux — frontend logic (mail.tm API) ===== */
-
-const urlDomain = "https://api.mail.tm/domains";
-const urlAccount = "https://api.mail.tm/accounts";
-const urlToken = "https://api.mail.tm/token";
-const urlMessages = "https://api.mail.tm/messages";
-
-const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-const nameLen = 13;
+/* ===== TempAdd Flux — frontend logic (uses shared API module) ===== */
 
 // ---- App state ----
 let email = "";
@@ -16,8 +8,6 @@ let pollTimer = null;
 let seenMessageIds = new Set();
 let currentMessages = [];
 let usingExtensionState = false;
-
-const MAILBOX_LIFETIME_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 // ---- DOM refs ----
 const $ = (id) => document.getElementById(id);
@@ -41,17 +31,7 @@ const modalBody = $("modal-body");
 
 $("year").textContent = new Date().getFullYear();
 
-/* ---------- Helpers ---------- */
-function createUsername() {
-    let userName = "";
-
-    for(let i = 0; i < nameLen; i++) {
-        let randomIndex = Math.floor(Math.random() * chars.length);
-        userName += chars[randomIndex];
-    }
-    return userName;
-}
-
+/* ---------- Helpers (app-specific, not in shared API) ---------- */
 function toast(message) {
   const el = document.createElement("div");
   el.className = "toast";
@@ -89,114 +69,11 @@ function playNotificationSound() {
   }
 }
 
-function relativeTime(dateStr) {
-  const date = new Date(dateStr);
-  const diff = Math.floor((Date.now() - date.getTime()) / 1000);
-  if (diff < 60) return "just now";
-  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-  return date.toLocaleDateString();
-}
-
-function escapeHtml(str = "") {
-  return str
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
-
-/* ---------- mail.tm API ---------- */
-async function createMailbox() {
-    const res = await fetch(urlDomain);
-    const data = await res.json();
-    const domain = data["hydra:member"][0].domain;
-    email = `${createUsername()}@${domain}`.toLowerCase();
-    password = createUsername(); // Randomly generate a secure password
-
-    const credentials = {
-        address: email,
-        password: password
-    };
-
-    const accountRes = await fetch(urlAccount, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(credentials),
-    });
-
-    const accountData = await accountRes.json();
-
-    // Guard: Check if account creation failed
-    if (accountData.errors || accountData.violations || !accountData.id) {
-        throw new Error(`Account Creation Failed: ${JSON.stringify(accountData)}`);
-    }
-
-    console.log("Mailbox Created");
-    console.log(accountData);
-
-    return credentials;
-}
-
-async function getToken(credentials) {
-    const res = await fetch(urlToken, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify(credentials)
-    });
-
-    const tokenData = await res.json();
-
-    token = tokenData.token;
-
-    // Guard: Check if token is missing
-    if (!token) {
-        throw new Error(`Token Retrieval Failed: ${JSON.stringify(tokenData)}`);
-    }
-
-    // console.log("Token Generated : ", token);
-
-    return token;
-}
-
-async function fetchMessages() {
-    const res = await fetch(urlMessages, {
-        headers: {
-            Authorization: `Bearer ${token}`
-        }
-    });
-    if (!res.ok) return { "hydra:member": [] };
-    const messages = await res.json();
-    return messages;
-}
-
-async function fetchMessageBody(id) {
-  const res = await fetch(`${urlMessages}/${id}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  if (!res.ok) return null;
-  return res.json();
-}
-
 /* ---------- Rendering ---------- */
-function renderMessages(messages) {
-  const mails = messages["hydra:member"] || [];
+function renderMessages(mails) {
+  // Accepts a flat array of mail objects (from API.fetchMessages or extension state)
   currentMessages = mails;
   inboxCount.textContent = `${mails.length} message${mails.length === 1 ? "" : "s"}`;
-
-  // if (mails.length === 0) {
-  //   console.log("Inbox Empty");
-  // } else {
-  //   mails.forEach(mail => {
-  //     console.log("----------------");
-  //     console.log("From:", mail.from.address);
-  //     console.log("Subject:", mail.subject);
-  //     console.log("Preview:", mail.intro);
-  //     console.log("----------------");
-  //   });
-  // }
 
   if (mails.length === 0) {
     emptyState.classList.remove("hidden");
@@ -219,13 +96,13 @@ function renderMessages(messages) {
     const initial = (mail.from?.name || mail.from?.address || "?").charAt(0).toUpperCase();
 
     li.innerHTML = `
-      <span class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-royal text-sm font-bold text-white">${escapeHtml(initial)}</span>
+      <span class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-royal text-sm font-bold text-white">${API.escapeHtml(initial)}</span>
       <div class="min-w-0 flex-1">
         <div class="flex items-center justify-between gap-2">
-          <p class="min-w-0 truncate text-sm font-bold text-navy">${escapeHtml(
+          <p class="min-w-0 truncate text-sm font-bold text-navy">${API.escapeHtml(
             mail.from?.name || mail.from?.address || "Unknown sender"
           )}</p>
-          <span class="shrink-0 text-xs text-navy/50">${relativeTime(
+          <span class="shrink-0 text-xs text-navy/50">${API.relativeTime(
             mail.createdAt
           )}</span>
         </div>
@@ -235,9 +112,9 @@ function renderMessages(messages) {
               ? '<span class="inline-block h-2 w-2 shrink-0 rounded-full bg-sky"></span>'
               : ""
           }
-          ${escapeHtml(mail.subject || "(no subject)")}
+          ${API.escapeHtml(mail.subject || "(no subject)")}
         </p>
-        <p class="mt-0.5 truncate text-xs text-navy/55">${escapeHtml(
+        <p class="mt-0.5 truncate text-xs text-navy/55">${API.escapeHtml(
           mail.intro || ""
         )}</p>
       </div>
@@ -256,7 +133,7 @@ async function openMessage(id) {
     '<div class="flex justify-center py-10"><span class="h-8 w-8 animate-spin rounded-full border-[3px] border-light border-t-sky"></span></div>';
   openModal();
 
-  const full = await fetchMessageBody(id);
+  const full = await API.fetchMessageBody(token, id);
   if (!full) {
     modalBody.innerHTML =
       '<p class="text-navy/70">Could not load this message.</p>';
@@ -271,7 +148,7 @@ async function openMessage(id) {
   if (full.html && full.html.length) {
     modalBody.innerHTML = full.html.join("");
   } else {
-    modalBody.innerHTML = `<pre class="whitespace-pre-wrap font-sans">${escapeHtml(
+    modalBody.innerHTML = `<pre class="whitespace-pre-wrap font-sans">${API.escapeHtml(
       full.text || "(empty message)"
     )}</pre>`;
   }
@@ -293,17 +170,18 @@ async function pollInbox(manual = false) {
   if (usingExtensionState) {
     if (manual) {
       checkSpin.classList.add("animate-spin");
-      window.postMessage({ type: "TEMPADD_REQUEST_REFRESH" }, "*");
+      window.postMessage({ type: "TEMPADD_REQUEST_REFRESH" }, window.location.origin);
       setTimeout(() => checkSpin.classList.remove("animate-spin"), 600);
     }
     return;
   }
 
+  if (!token) return;
+
   if (manual) checkSpin.classList.add("animate-spin");
   try {
     const prevCount = currentMessages.length;
-    const rawData = await fetchMessages();
-    const messages = rawData["hydra:member"] || [];
+    const messages = await API.fetchMessages(token);
     if (messages.length > prevCount) {
       const newOnes = messages.filter((m) => !seenMessageIds.has(m.id));
       if (newOnes.length) {
@@ -311,7 +189,7 @@ async function pollInbox(manual = false) {
         playNotificationSound();
       }
     }
-    renderMessages(rawData);
+    renderMessages(messages);
   } catch (e) {
     console.log("[v0] poll error:", e.message);
   } finally {
@@ -368,7 +246,7 @@ async function init() {
   if (saved) {
     // Check if the saved session has already expired
     const elapsed = Date.now() - saved.created;
-    if (elapsed >= MAILBOX_LIFETIME_MS) {
+    if (elapsed >= API.MAILBOX_LIFETIME_MS) {
       if (!usingExtensionState) {
         clearSession();
         await newMailbox();
@@ -381,7 +259,7 @@ async function init() {
     token = saved.token;
     emailField.value = email;
     headerCopyBtn.textContent = "Copy Email";
-    renderMessages({ "hydra:member": [] });
+    renderMessages([]);
 
     // Verify the saved token still works
     try {
@@ -400,7 +278,7 @@ async function init() {
 
 async function newMailbox() {
   if (usingExtensionState) {
-    window.postMessage({ type: "TEMPADD_REQUEST_NEW_MAILBOX" }, "*");
+    window.postMessage({ type: "TEMPADD_REQUEST_NEW_MAILBOX" }, window.location.origin);
     return;
   }
 
@@ -411,11 +289,20 @@ async function newMailbox() {
 
   emailField.value = "Generating address...";
   headerCopyBtn.textContent = "Get Email";
-  renderMessages({ "hydra:member": [] });
+  renderMessages([]);
 
   try {
-    const credentials = await createMailbox();
-    await getToken(credentials);
+    const { email: newEmail, password: newPass } = await API.createMailbox();
+
+    // Re-check: if extension state arrived during the async API call, abort
+    if (usingExtensionState) return;
+
+    email = newEmail;
+    password = newPass;
+    token = await API.getToken({ email, password });
+
+    // Re-check again after second async call
+    if (usingExtensionState) return;
 
     emailField.value = email;
     headerCopyBtn.textContent = "Copy Email";
@@ -481,6 +368,7 @@ window.addEventListener("TEMPADD_OPEN_EMAIL", (event) => {
 
 /* ---------- Extension Synchronization ---------- */
 window.addEventListener("message", (e) => {
+  if (e.source !== window) return;
   if (!e.data || !e.data.type) return;
 
   if (e.data.type === "TEMPADD_EXTENSION_STATE") {
@@ -498,14 +386,14 @@ window.addEventListener("message", (e) => {
       emailField.value = email;
       headerCopyBtn.textContent = "Copy Email";
       
-      // Convert extension messages format to app.js format
+      // Extension messages are already a flat array
       const mails = state.messages || [];
-      renderMessages({ "hydra:member": mails });
+      renderMessages(mails);
     } else {
       emailField.value = "Generating address...";
       headerCopyBtn.textContent = "Get Email";
-      renderMessages({ "hydra:member": [] });
-      window.postMessage({ type: "TEMPADD_REQUEST_NEW_MAILBOX" }, "*");
+      renderMessages([]);
+      window.postMessage({ type: "TEMPADD_REQUEST_NEW_MAILBOX" }, window.location.origin);
     }
   }
 });

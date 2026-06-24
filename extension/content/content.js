@@ -11,7 +11,7 @@
   host.style.cssText = "all:initial;position:fixed;z-index:2147483647;";
   document.body.appendChild(host);
 
-  const shadow = host.attachShadow({ mode: "closed" });
+  const shadow = host.attachShadow({ mode: "open" });
 
   /* Load isolated CSS */
   const link = document.createElement("link");
@@ -418,29 +418,34 @@
     if (changes.createdAt && isCardOpen) {
       loadState();
     }
+
+    // Push updated state to website (merged from second listener)
+    sendMessage({ action: "getState" }).then(pushStateToWebsite);
   });
 
   /* ---------- Extension / Website Sync ---------- */
+
+  const ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:5500",
+    "http://127.0.0.1:5500"
+  ];
+
   function pushStateToWebsite(state) {
     if (state) {
-      window.postMessage({ type: "TEMPADD_EXTENSION_STATE", state: state }, "*");
+      window.postMessage({ type: "TEMPADD_EXTENSION_STATE", state: state }, window.location.origin);
     }
   }
 
   // Push on initial load
   sendMessage({ action: "getState" }).then(pushStateToWebsite);
 
-  // Push on storage changes
-  chrome.storage.onChanged.addListener((changes, area) => {
-    if (area === "local") {
-      sendMessage({ action: "getState" }).then(pushStateToWebsite);
-    }
-  });
-
-  // Listen for Website Requests
+  // Listen for Website Requests (origin-validated)
   window.addEventListener("message", (e) => {
     if (!e.data || !e.data.type) return;
-    
+    if (!ALLOWED_ORIGINS.includes(e.origin)) return;
+
     if (e.data.type === "TEMPADD_REQUEST_NEW_MAILBOX") {
       sendMessage({ action: "createMailbox" });
     } else if (e.data.type === "TEMPADD_REQUEST_REFRESH") {

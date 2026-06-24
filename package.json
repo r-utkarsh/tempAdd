@@ -6,10 +6,12 @@
     "build:css": "tailwindcss -i ./src/input.css -o ./dist/output.css",
     "watch:css": "tailwindcss -i ./src/input.css -o ./dist/output.css --watch",
     "dev": "npm run build:css && serve . -l 3000",
-    "start": "npm run build:css && serve . -l 3000"
+    "start": "npm run build:css && serve . -l 3000",
+    "test": "jest"
   },
   "devDependencies": {
     "@tailwindcss/cli": "^4.3.0",
+    "jest": "^29.7.0",
     "serve": "^14.2.4",
     "tailwindcss": "^4.3.0"
   }

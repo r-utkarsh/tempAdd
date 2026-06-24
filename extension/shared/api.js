@@ -16,8 +16,11 @@ const API = (() => {
 
   async function fetchWithRetry(url, options = {}, retries = 3, delay = 1000) {
     for (let i = 0; i < retries; i++) {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
       try {
-        const res = await fetch(url, options);
+        const res = await fetch(url, { ...options, signal: controller.signal });
+        clearTimeout(timeoutId);
         if (res.status === 429) {
           const backoff = delay * 2 * (i + 1);
           console.warn(`[TempAdd API] Rate limited (429) on ${url}. Retrying in ${backoff}ms...`);
@@ -26,7 +29,13 @@ const API = (() => {
         }
         return res;
       } catch (err) {
-        if (i === retries - 1) throw err;
+        clearTimeout(timeoutId);
+        if (i === retries - 1) {
+          if (err.name === "AbortError") {
+            throw new Error("Request timed out after 8 seconds");
+          }
+          throw err;
+        }
         const backoff = delay * (i + 1);
         console.warn(`[TempAdd API] Error on ${url}: ${err.message}. Retrying in ${backoff}ms...`);
         await new Promise(r => setTimeout(r, backoff));
@@ -35,9 +44,12 @@ const API = (() => {
   }
 
   function createUsername() {
+    const crypt = self.crypto || window.crypto;
+    const array = new Uint32Array(NAME_LEN);
+    crypt.getRandomValues(array);
     let name = "";
     for (let i = 0; i < NAME_LEN; i++) {
-      name += CHARS[Math.floor(Math.random() * CHARS.length)];
+      name += CHARS[array[i] % CHARS.length];
     }
     return name;
   }

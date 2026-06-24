@@ -4,7 +4,7 @@
 importScripts("../shared/api.js");
 
 const ALARM_NAME = "tempadd-poll";
-const ALARM_PERIOD = 0.25; // minutes (15 seconds)
+const ALARM_PERIOD = 1; // minutes (60 seconds)
 const BADGE_COLOR = "#0077B6"; // royal
 
 /* ---------- State helpers ---------- */
@@ -60,7 +60,16 @@ function showNotification(mail) {
 
 /* ---------- Mailbox creation ---------- */
 
+let activeCreationPromise = null;
+
 async function createNewMailbox() {
+  // Prevent concurrent mailbox creation (race condition guard)
+  if (activeCreationPromise) return activeCreationPromise;
+  activeCreationPromise = _doCreateMailbox();
+  return activeCreationPromise;
+}
+
+async function _doCreateMailbox() {
   try {
     const { email, password } = await API.createMailbox();
     const token = await API.getToken({ email, password });
@@ -82,6 +91,8 @@ async function createNewMailbox() {
   } catch (err) {
     console.error("[TempAdd] Mailbox creation failed:", err.message);
     return { success: false, error: err.message };
+  } finally {
+    activeCreationPromise = null;
   }
 }
 
